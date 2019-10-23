@@ -1,6 +1,10 @@
 import sys
 from itertools import zip_longest
 from pathlib import Path
+from http.server import *
+from socketserver import *
+from subprocess import *
+import urllib.parse
 
 import spacy
 from germalemma import GermaLemma
@@ -86,6 +90,8 @@ def _lemma(doc, remove_stop):
             if not token.is_stop
         ]
     else:
+        # print("got doc: " + str(doc))
+
         lemmatized = [
             process_token(
                 str(token), token._.iwnlp_lemmas, token.pos_, token.whitespace_
@@ -93,7 +99,6 @@ def _lemma(doc, remove_stop):
             for token in doc
         ]
     return "".join(lemmatized)
-
 
 def lemma(text, remove_stop):
     doc = nlp(text)
@@ -128,6 +133,39 @@ def process_file(path, per_line, escape, remove_stop):
         text = path.read_text()
         Path("/output/" + path.name).write_text(lemma(text, remove_stop))
 
+### server provision
+
+PORT = 8082
+
+class myHandler(BaseHTTPRequestHandler):
+
+	#Handler for the GET requests
+	def do_GET(self):
+		# split the path
+		segments = self.path.split("/");
+		print(str(segments));
+
+		output = ""
+
+		# we will always have at least two segments!
+		if len(segments) > 1:
+			input = urllib.parse.unquote(segments[1])
+			print("got input " + input)
+			output = lemma(input, remove_stop="--remove_stop" in sys.argv)
+			print("got output " + output)
+
+		self.send_response(200)
+		self.send_header('Content-type','text/plain')
+		self.end_headers()
+		# Send the html message
+		self.wfile.write(str.encode(output))
+		return
+
+def start_server():
+    httpd = TCPServer(("", PORT), myHandler)
+    print ("serving at port " + str(PORT))
+    httpd.serve_forever()
+
 
 # # https://stackoverflow.com/questions/46245844/pass-arguments-to-python-argparse-within-docker-container
 if __name__ == "__main__":
@@ -151,6 +189,5 @@ if __name__ == "__main__":
                 )
 
         else:
-            print(
-                'something went wrong, either give me some input as argument, i.e. `docker run - it lemma "Was ist das für ein Leben?" or mount some volumes (check the README).'
-            )
+            start_server()
+
