@@ -5,6 +5,7 @@ from http.server import *
 from socketserver import *
 from subprocess import *
 import urllib.parse
+import json
 
 import spacy
 from germalemma import GermaLemma
@@ -100,9 +101,41 @@ def _lemma(doc, remove_stop):
         ]
     return "".join(lemmatized)
 
+def _addLemmaToTokens(doc, remove_stop):
+    lemmatizedtokens = []
+    for token in doc:
+        if not remove_stop or not token.is_stop:
+            tok = str(token)
+            lemma = process_token(
+                        str(token), token._.iwnlp_lemmas, token.pos_, token.whitespace_
+                    )
+#            token.text = tok-2.1.0
+#            token.lemma = lemma
+            lemmatizedtokens.append({"text": tok, "lemma": lemma})
+    return lemmatizedtokens
+
 def lemma(text, remove_stop):
     doc = nlp(text)
-    return _lemma(doc, remove_stop)
+#    return _lemma(doc, remove_stop)
+#    lemmatised = _addLemmaToTokens(doc, remove_stop)
+    lemmatised = _addLemmaToTokens(doc, False)
+    jsonstr = json.dumps(doc.to_json())
+
+    print("doc as json: " + jsonstr)
+    jsonised = json.loads(jsonstr)
+
+    print("length of lemmatised: " + str(len(lemmatised)))
+    print("length of jsonised: " + str(len(jsonised)))
+
+    # now merge lemmatised into doc
+    i = 0
+    for token in doc:
+        if True: #not remove_stop or not token.is_stop:
+            jsonised["tokens"][i]["text"] = lemmatised[i]["text"]
+            jsonised["tokens"][i]["lemma"] = lemmatised[i]["lemma"]
+            i += 1
+
+    return json.dumps(jsonised)
 
 
 def process_file(path, per_line, escape, remove_stop):
@@ -147,12 +180,18 @@ class myHandler(BaseHTTPRequestHandler):
 
 		output = ""
 
-		# we will always have at least two segments!
-		if len(segments) > 1:
-			input = urllib.parse.unquote(segments[1])
-			print("got input " + input)
-			output = lemma(input, remove_stop="--remove_stop" in sys.argv)
-			print("got output " + output)
+		# we will support the following calls:
+		# /api/nlp/lemmatise/{POS}/{WORD}
+		# /api/nlp/analye/{WORD_SEQUENCE}
+		if len(segments) > 4:
+		    if segments[3] == "lemmatise":
+		        pos = segments[4]
+		        token_text = segments[5]
+		        output = json.dumps({"lemma": lemmatizer.find_lemma(token_text, pos)})
+		    else:
+		        input = urllib.parse.unquote(segments[4])
+		        print("got input " + input)
+		        output = lemma(input, remove_stop="--remove_stop" in sys.argv)
 
 		self.send_response(200)
 		self.send_header('Content-type','text/plain')
