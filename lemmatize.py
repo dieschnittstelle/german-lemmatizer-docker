@@ -114,7 +114,7 @@ def _addLemmaToTokens(doc, remove_stop):
             lemmatizedtokens.append({"text": tok, "lemma": lemma})
     return lemmatizedtokens
 
-def lemma(text, remove_stop):
+def analyse(text, remove_stop):
     doc = nlp(text)
 #    return _lemma(doc, remove_stop)
 #    lemmatised = _addLemmaToTokens(doc, remove_stop)
@@ -193,7 +193,7 @@ class myHandler(BaseHTTPRequestHandler):
 		    else:
 		        input = urllib.parse.unquote(segments[4])
 		        print("got input " + input)
-		        output = lemma(input, remove_stop="--remove_stop" in sys.argv)
+		        output = analyse(input, remove_stop="--remove_stop" in sys.argv)
 
 		self.send_response(200)
 		self.send_header('Content-type','text/plain')
