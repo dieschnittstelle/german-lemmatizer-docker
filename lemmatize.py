@@ -186,8 +186,10 @@ class myHandler(BaseHTTPRequestHandler):
 		if len(segments) > 4:
 		    if segments[3] == "lemmatise":
 		        pos = segments[4]
-		        token_text = segments[5]
-		        output = json.dumps({"lemma": lemmatizer.find_lemma(token_text, pos)})
+		        token_text = urllib.parse.unquote(segments[5])
+		        lemma = lemmatizer.find_lemma(token_text, pos)
+		        print("lemmatised: " + token_text + " -> " + lemma)
+		        output = json.dumps({"lemma": lemma})
 		    else:
 		        input = urllib.parse.unquote(segments[4])
 		        print("got input " + input)
