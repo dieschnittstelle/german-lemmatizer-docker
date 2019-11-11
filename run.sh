@@ -1,4 +1,4 @@
-g# source for tiger corpus: https://www.ims.uni-stuttgart.de/forschung/ressourcen-manuell-zu-bearbeiten/korpora/TIGERCorpus/download/start.html
+# source for tiger corpus: https://www.ims.uni-stuttgart.de/forschung/ressourcen-manuell-zu-bearbeiten/korpora/TIGERCorpus/download/start.html
 
 # build
 docker build -t dieschnittstelle/german_lemmatiser .
